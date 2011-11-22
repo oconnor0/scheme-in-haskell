@@ -17,10 +17,18 @@ symbol = oneOf "!#$%&|*+-/:<=>?@^_~"
 spaces :: Parser ()
 spaces = skipMany1 space
 
+escaped :: Char -> Char -> Parser Char
+escaped s c = do
+  char '\\' >> char s
+  return c
+
 validStringChar :: Parser Char
 validStringChar =
     noneOf "\""
-    <|> (char '\\' >> char '\\')
+    <|> escaped '\\' '\\'
+    <|> escaped 'n' '\n'
+    <|> escaped 't' '\t'
+    <|> escaped 'r' '\r'
 
 parseString :: Parser LispVal
 parseString = do char '"'
@@ -51,4 +59,5 @@ readExpr input = case parse parseExpr "lisp" input of
 main :: IO ()
 main = do
   args <- getArgs
+  putStrLn $ args !! 0
   putStrLn $ readExpr $ args !! 0
