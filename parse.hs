@@ -17,9 +17,14 @@ symbol = oneOf "!#$%&|*+-/:<=>?@^_~"
 spaces :: Parser ()
 spaces = skipMany1 space
 
+validStringChar :: Parser Char
+validStringChar =
+    noneOf "\""
+    <|> (char '\\' >> char '\\')
+
 parseString :: Parser LispVal
 parseString = do char '"'
-                 x <- many (noneOf "\"")
+                 x <- many validStringChar
                  char '"'
                  return $ String x
 
