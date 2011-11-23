@@ -109,7 +109,12 @@ primitives = [("+", numericBinop (+)),
               ("mod", numericBinop mod),
               ("quotient", numericBinop quot),
               ("remainder", numericBinop rem),
-              ("boolean?", 
+              ("boolean?", isBoolean),
+              ("list?", isList),
+              ("pair?", isPair),
+              ("number?", isNumber),
+              ("symbol?", isSymbol),
+              ("string?", isString)
               ]
 
 numericBinop :: (Integer -> Integer -> Integer) -> [LispVal] -> LispVal
@@ -123,6 +128,32 @@ unpackNum (Number n) = n
 --                            else fst $ parsed !! 0
 --unpackNum (List [n]) = unpackNum n
 unpackNum _ = 0
+
+isBoolean :: [LispVal] -> LispVal
+isBoolean [Bool _] = Bool True
+isBoolean _ = Bool False
+
+isList :: [LispVal] -> LispVal
+isList [List _] = Bool True
+isList _ = Bool False
+
+isPair :: [LispVal] -> LispVal
+isPair [List []] = Bool False
+isPair [List _] = Bool True
+isPair [DottedList _ _] = Bool True
+isPair _ = Bool False
+
+isNumber :: [LispVal] -> LispVal
+isNumber [(Number _)] = Bool True
+isNumber _ = Bool False
+
+isSymbol :: [LispVal] -> LispVal
+isSymbol [(Atom _)] = Bool True
+isSymbol _ = Bool False
+
+isString :: [LispVal] -> LispVal
+isString [(String _)] = Bool True
+isString _ = Bool False
 
 main :: IO ()
 main = getArgs >>= print . eval . readExpr . head
