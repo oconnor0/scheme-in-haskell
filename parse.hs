@@ -144,15 +144,15 @@ isPair [DottedList _ _] = Bool True
 isPair _ = Bool False
 
 isNumber :: [LispVal] -> LispVal
-isNumber [(Number _)] = Bool True
+isNumber [Number _] = Bool True
 isNumber _ = Bool False
 
 isSymbol :: [LispVal] -> LispVal
-isSymbol [(Atom _)] = Bool True
+isSymbol [Atom _] = Bool True
 isSymbol _ = Bool False
 
 isString :: [LispVal] -> LispVal
-isString [(String _)] = Bool True
+isString [String _] = Bool True
 isString _ = Bool False
 
 main :: IO ()
