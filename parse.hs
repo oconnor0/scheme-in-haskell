@@ -145,6 +145,18 @@ primitives = [("+", args2 $ numericBinop (+)),
               ("mod", args2 $ numericBinop mod),
               ("quotient", args2 $ numericBinop quot),
               ("remainder", args2 $ numericBinop rem),
+              ("=", args2 $ numBoolBinop (==)),
+              ("<", args2 $ numBoolBinop (<)),
+              (">", args2 $ numBoolBinop (>)),
+              ("<=", args2 $ numBoolBinop (<=)),
+              (">=", args2 $ numBoolBinop (>=)),
+              ("&&", args2 $ boolBoolBinop (&&)),
+              ("||", args2 $ boolBoolBinop (||)),
+              ("string=?", args2 $ strBoolBinop (==)),
+              ("string<?", args2 $ strBoolBinop (<)),
+              ("string>?", args2 $ strBoolBinop (>)),
+              ("string<=?", args2 $ strBoolBinop (<=)),
+              ("string>=?", args2 $ strBoolBinop (>=)),
               ("boolean?", args1 isBoolean),
               ("list?", args1 isList),
               ("pair?", args1 isPair),
@@ -153,9 +165,28 @@ primitives = [("+", args2 $ numericBinop (+)),
               ("string?", args1 isString)
               ]
 
+args :: Int -> ([LispVal] -> ThrowsError LispVal) -> [LispVal] -> ThrowsError LispVal
+args n fn val = if n /= length val
+                  then throwError $ NumArgs n val
+                  else fn val
+
+args1 :: ([LispVal] -> ThrowsError LispVal) -> [LispVal] -> ThrowsError LispVal
+args1 = args 1
+args2 :: ([LispVal] -> ThrowsError LispVal) -> [LispVal] -> ThrowsError LispVal
+args2 = args 2
+
 numericBinop :: (Integer -> Integer -> Integer) -> [LispVal] -> ThrowsError LispVal
---numericBinop op singleVal@[_] = throwError $ NumArgs 2 singleVal
 numericBinop op params = mapM unpackNum params >>= return . Number . foldl1 op
+
+boolBinop :: (LispVal -> ThrowsError a) -> (a -> a -> Bool) -> [LispVal] -> ThrowsError LispVal
+boolBinop unpacker op args = do
+  left <- unpacker $ args !! 0
+  right <- unpacker $ args !! 1
+  return $ Bool $ left `op` right
+
+numBoolBinop = boolBinop unpackNum
+boolBoolBinop = boolBinop unpackBool
+strBoolBinop = boolBinop unpackString
 
 unpackNum :: LispVal -> ThrowsError Integer
 unpackNum (Number n) = return n
@@ -166,13 +197,15 @@ unpackNum (String n) = let parsed = reads n in
 unpackNum (List [n]) = unpackNum n
 unpackNum notNum = throwError $ TypeMismatch "number" notNum
 
-args :: Int -> ([LispVal] -> ThrowsError LispVal) -> [LispVal] -> ThrowsError LispVal
-args n fn val = if n /= length val
-                  then throwError $ NumArgs n val
-                  else fn val
+unpackString :: LispVal -> ThrowsError String
+unpackString (String s) = return s
+unpackString (Number n) = return $ show n
+unpackString (Bool b) = return $ show b
+unpackString notString = throwError $ TypeMismatch "string" notString
 
-args1 = args 1
-args2 = args 2
+unpackBool :: LispVal -> ThrowsError Bool
+unpackBool (Bool b) = return b
+unpackBool notBool = throwError $ TypeMismatch "boolean" notBool
 
 isBoolean :: [LispVal] -> ThrowsError LispVal
 isBoolean [Bool _] = return $ Bool True
