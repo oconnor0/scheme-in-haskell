@@ -14,7 +14,7 @@ data LispVal = Atom String
 
 instance Show LispVal where show = showVal
 
-data LispError = NumArgs Integer [LispVal]
+data LispError = NumArgs Int [LispVal]
                | TypeMismatch String LispVal
                | Parser ParseError
                | BadSpecialForm String LispVal
@@ -50,7 +50,7 @@ showError (UnboundVar message varname) = message ++ ": " ++ varname
 showError (BadSpecialForm message form) = message ++ ": " ++ show form
 showError (NotFunction message func) = message ++ ": " ++ func
 showError (NumArgs expected found) = "Expected " ++ show expected
-                                  ++ " args; found values " ++ unwordsList found
+                                  ++ " arg(s); found values " ++ unwordsList found
 showError (TypeMismatch expected found) = "Invalid type: expected " ++ expected
                                        ++ ", found " ++ show found
 showError (Parser parseErr) = "Parse error at " ++ show parseErr
@@ -138,23 +138,23 @@ apply fn args = maybe (throwError $ NotFunction "Unrecognized primitive function
                       (lookup fn primitives)
 
 primitives :: [(String, [LispVal] -> ThrowsError LispVal)]
-primitives = [("+", numericBinop (+)),
-              ("-", numericBinop (-)),
-              ("*", numericBinop (*)),
-              ("/", numericBinop div),
-              ("mod", numericBinop mod),
-              ("quotient", numericBinop quot),
-              ("remainder", numericBinop rem),
-              ("boolean?", isBoolean),
-              ("list?", isList),
-              ("pair?", isPair),
-              ("number?", isNumber),
-              ("symbol?", isSymbol),
-              ("string?", isString)
+primitives = [("+", args2 $ numericBinop (+)),
+              ("-", args2 $ numericBinop (-)),
+              ("*", args2 $ numericBinop (*)),
+              ("/", args2 $ numericBinop div),
+              ("mod", args2 $ numericBinop mod),
+              ("quotient", args2 $ numericBinop quot),
+              ("remainder", args2 $ numericBinop rem),
+              ("boolean?", args1 isBoolean),
+              ("list?", args1 isList),
+              ("pair?", args1 isPair),
+              ("number?", args1 isNumber),
+              ("symbol?", args1 isSymbol),
+              ("string?", args1 isString)
               ]
 
 numericBinop :: (Integer -> Integer -> Integer) -> [LispVal] -> ThrowsError LispVal
-numericBinop op singleVal@[_] = throwError $ NumArgs 2 singleVal
+--numericBinop op singleVal@[_] = throwError $ NumArgs 2 singleVal
 numericBinop op params = mapM unpackNum params >>= return . Number . foldl1 op
 
 unpackNum :: LispVal -> ThrowsError Integer
@@ -165,6 +165,14 @@ unpackNum (String n) = let parsed = reads n in
                             else return $ fst $ parsed !! 0
 unpackNum (List [n]) = unpackNum n
 unpackNum notNum = throwError $ TypeMismatch "number" notNum
+
+args :: Int -> ([LispVal] -> ThrowsError LispVal) -> [LispVal] -> ThrowsError LispVal
+args n fn val = if n /= length val
+                  then throwError $ NumArgs n val
+                  else fn val
+
+args1 = args 1
+args2 = args 2
 
 isBoolean :: [LispVal] -> ThrowsError LispVal
 isBoolean [Bool _] = return $ Bool True
