@@ -170,9 +170,7 @@ args n fn val = if n /= length val
                   then throwError $ NumArgs n val
                   else fn val
 
-args1 :: ([LispVal] -> ThrowsError LispVal) -> [LispVal] -> ThrowsError LispVal
 args1 = args 1
-args2 :: ([LispVal] -> ThrowsError LispVal) -> [LispVal] -> ThrowsError LispVal
 args2 = args 2
 
 numericBinop :: (Integer -> Integer -> Integer) -> [LispVal] -> ThrowsError LispVal
