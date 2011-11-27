@@ -167,7 +167,10 @@ primitives = [("+", args2 $ numericBinop (+)),
               ("pair?", args1 isPair),
               ("number?", args1 isNumber),
               ("symbol?", args1 isSymbol),
-              ("string?", args1 isString)
+              ("string?", args1 isString),
+              ("car", args1 car),
+              ("cdr", args1 cdr),
+              ("cons", args2 cons)
               ]
 
 args :: Int -> ([LispVal] -> ThrowsError LispVal) -> [LispVal] -> ThrowsError LispVal
@@ -235,6 +238,23 @@ isSymbol _ = return $ Bool False
 isString :: [LispVal] -> ThrowsError LispVal
 isString [String _] = return $ Bool True
 isString _ = return $ Bool False
+
+car :: [LispVal] -> ThrowsError LispVal
+car [List (x : xs)] = return x
+car [DottedList (x : xs) _] = return x
+car [badArg] = throwError $ TypeMismatch "pair" badArg
+
+cdr :: [LispVal] -> ThrowsError LispVal
+cdr [List (x : xs)] = return $ List xs
+cdr [DottedList [xs] x] = return x
+cdr [DottedList (_ : xs) x] = return $ DottedList xs x
+cdr [badArg] = throwError $ TypeMismatch "pair" badArg
+
+cons :: [LispVal] -> ThrowsError LispVal
+--cons [x, List []] = return $ List [x]
+cons [x, List xs] = return $ List $ x : xs
+cons [x, DottedList xs xlast] = return $ DottedList (x : xs) xlast
+cons [x1, x2] = return $ DottedList [x1] x2
 
 main :: IO ()
 main = do
